@@ -1,0 +1,60 @@
+{
+  "nodes": {
+    "modify_query_with_history": {
+      "variant_0": {
+        "inputs": {},
+        "inputsValue": {}
+      }
+    },
+    "lookup": {
+      "variant_0": {
+        "inputs": {
+          "index_type": [
+            {
+              "value": "MLIndex file from path"
+            }
+          ],
+          "acs_content_field": [],
+          "acs_embedding_field": [],
+          "acs_index_name": [],
+          "acs_metadata_field": [],
+          "embedding_type": [],
+          "embedding_deployment": [],
+          "embedding_model": [],
+          "mlindex_asset_id": [],
+          "pinecone_index_connection": [],
+          "pinecone_index_name": [],
+          "semantic_configuration": [],
+          "query_type": [
+            {
+              "display_value": "Hybrid (vector + keyword)",
+              "value": "Hybrid (vector + keyword)"
+            }
+          ]
+        },
+        "inputsValue": {
+          "index_type": "MLIndex file from path",
+          "mlindex_path": "azureml://subscriptions/2954cbb0-0e88-479a-ab37-18e6b6832700/resourcegroups/mvp-sweden/workspaces/rag_solution/datastores/workspaceblobstore/paths/azureml/a0156191-2fe5-4fd8-8975-1b4108567e6c/index/"
+        }
+      }
+    },
+    "generate_prompt_context": {
+      "variant_0": {
+        "inputs": {},
+        "inputsValue": {}
+      }
+    },
+    "Prompt_variants": {
+      "variant_0": {
+        "inputs": {},
+        "inputsValue": {}
+      }
+    },
+    "chat_with_context": {
+      "variant_0": {
+        "inputs": {},
+        "inputsValue": {}
+      }
+    }
+  }
+}

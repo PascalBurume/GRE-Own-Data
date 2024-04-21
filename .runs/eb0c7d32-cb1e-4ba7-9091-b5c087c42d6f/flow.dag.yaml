@@ -1,0 +1,104 @@
+inputs:
+  chat_history:
+    type: list
+    default:
+    - inputs:
+        chat_input: Hi
+      outputs:
+        chat_output: Hello! How can I assist you in GRE Guides today?
+    - inputs:
+        chat_input: Can you tell me about the GRE test structure?
+      outputs:
+        chat_output: The GRE General Test consists of three main sections Analytical Writing, Verbal Reasoning, and Quantitative Reasoning. The Analytical Writing section, which assesses critical thinking and analytical writing skills, is always presented first. This is followed by Verbal Reasoning, which measures reading comprehension and vocabulary, and Quantitative Reasoning, which assesses basic math skills and the ability to analyze data and draw conclusions. The test is approximately 3 hours and 45 minutes long, including short breaks.
+    - inputs:
+        chat_input: How should I prepare for the Analytical Writing section?
+      outputs:
+        chat_output: Preparing for the Analytical Writing section involves practicing with topics from the official pool of Issue and Argument tasks found on the ETS website. It's beneficial to practice under timed conditions and review scored sample essays to understand the scoring criteria. Focusing on structuring your essays clearly, developing your ideas fully, and avoiding common grammatical errors will also help improve your writing skills for this section.
+    - inputs:
+        chat_input: Do you have any tips for the Verbal Reasoning section?
+      outputs:
+        chat_output: For the Verbal Reasoning section, building a strong vocabulary is essential. Reading widely, especially materials that challenge you, can help improve your understanding of complex texts and unfamiliar words. Practice answering a variety of question types, such as reading comprehension, text completion, and sentence equivalence questions, to develop strategies for quickly identifying correct answers. Reviewing explanations for practice questions can also provide insights into effective strategies and common pitfalls.
+    is_chat_input: false
+    is_chat_history: true
+  chat_input:
+    type: string
+    default: What can you recommand for beginner
+    is_chat_input: true
+outputs:
+  chat_output:
+    type: string
+    reference: ${chat_with_context.output}
+    evaluation_only: false
+    is_chat_output: true
+nodes:
+- name: modify_query_with_history
+  type: llm
+  source:
+    type: code
+    path: modify_query_with_history.jinja2
+  inputs:
+    deployment_name: "gpt-35-turbo"
+    temperature: 0
+    top_p: 1
+    max_tokens: 1000
+    response_format:
+      type: text
+    presence_penalty: 0
+    frequency_penalty: 0
+    chat_history: "${inputs.chat_history}"
+    chat_input: "${inputs.chat_input}"
+  api: chat
+  provider: AzureOpenAI
+  connection: Default_AzureOpenAI
+  module: promptflow.tools.aoai
+  aggregation: false
+- name: lookup
+  type: python
+  source:
+    type: package
+    tool: promptflow_vectordb.tool.common_index_lookup.search
+  inputs:
+    mlindex_content: "embeddings:\n  api_base: https://ais-mvp-assistant.openai.azure.com/\n  api_type: Azure\n  api_version: 2023-07-01-preview\n  batch_size: '16'\n  connection:\n    id: \n      /subscriptions/2954cbb0-0e88-479a-ab37-18e6b6832700/resourceGroups/mvp-sweden/providers/Microsoft.MachineLearningServices/workspaces/rag_solution/connections/Default_AzureOpenAI\n  connection_type: workspace_connection\n  deployment: text-embedding-ada-002\n  dimension: 1536\n  file_format_version: '2'\n  kind: open_ai\n  model: text-embedding-ada-002\n  schema_version: '2'\nindex:\n  api_version: 2023-07-01-preview\n  connection:\n    id: \n      /subscriptions/2954cbb0-0e88-479a-ab37-18e6b6832700/resourceGroups/mvp-sweden/providers/Microsoft.MachineLearningServices/workspaces/rag_solution/connections/gresearch\n  connection_type: workspace_connection\n  endpoint: https://gresearch.search.windows.net/\n  engine: azure-sdk\n  field_mapping:\n    content: content\n    embedding: contentVector\n    filename: filepath\n    metadata: meta_json_string\n    title: title\n    url: url\n  index: gre-index\n  kind: acs\n  semantic_configuration_name: azureml-default\nself:\n  path: \n    azureml://subscriptions/2954cbb0-0e88-479a-ab37-18e6b6832700/resourcegroups/mvp-sweden/workspaces/rag_solution/datastores/workspaceblobstore/paths/azureml/a0156191-2fe5-4fd8-8975-1b4108567e6c/index/\n  asset_id:\n"
+    queries: "${modify_query_with_history.output}"
+    query_type: "Hybrid (vector + keyword)"
+    top_k: 2
+  aggregation: false
+- name: generate_prompt_context
+  type: python
+  source:
+    type: code
+    path: generate_prompt_context.py
+  inputs:
+    search_result: "${lookup.output}"
+  aggregation: false
+- name: chat_with_context
+  type: llm
+  source:
+    type: code
+    path: chat_with_context.jinja2
+  inputs:
+    deployment_name: "gpt-35-turbo"
+    temperature: 0
+    top_p: 1
+    max_tokens: 1000
+    response_format:
+      type: text
+    presence_penalty: 0
+    frequency_penalty: 0
+    prompt_text: "${Prompt_variants.output}"
+  api: chat
+  provider: AzureOpenAI
+  connection: Default_AzureOpenAI
+  module: promptflow.tools.aoai
+  aggregation: false
+- name: Prompt_variants
+  type: prompt
+  source:
+    type: code
+    path: Prompt_variants.jinja2
+  inputs:
+    chat_history: "${inputs.chat_history}"
+    chat_input: "${inputs.chat_input}"
+  aggregation: false
+environment:
+  python_requirements_txt: requirements.txt
